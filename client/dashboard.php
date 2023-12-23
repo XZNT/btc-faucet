@@ -5,6 +5,32 @@
     if($userInfos["userLevelXP"] - $userInfos["nextLevelXP"] > 230) {
         echo "<script>updateLevel();</script>";
     }
+        $userInfos = getUserInfos($pdo);
+if ($userInfos["sats_balance"] < 0) {
+    die();
+}
+
+// Function to convert satoshis to USD using CoinGecko API
+function convertToUSDFromSatoshi($satoshiAmount) {
+    $btcAmount = $satoshiAmount / 100000000; // Convert satoshis to BTC
+    $url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur";
+    
+    $response = file_get_contents($url);
+    $data = json_decode($response, true);
+
+    // Check if the API request was successful
+    if (isset($data['bitcoin']['eur'])) {
+        $usdAmount = $btcAmount * $data['bitcoin']['eur'];
+        return number_format($usdAmount, 2, '.', '') . " EUR";
+    } else {
+        return null; // API request failed
+    }
+}
+
+$satsBalance = $userInfos["sats_balance"];
+$usdAmount = convertToUSDFromSatoshi($satsBalance);
+
+
 ?>
 
 <link rel="stylesheet" href="../src/css/client/contact.css">
@@ -14,19 +40,19 @@
         <h1 class="mt-5">Hello, <?php echo htmlspecialchars($userInfos["username"]); ?></h1>
     </div>
     <div class="col-lg-9 flex gap-1em mobile-wrap mobile-no-gap">
-        <div class="illustr-box bg-dark col-lg-6 col-xs-12">
-            <div class="illustr">
-                <i class="fa fa-wallet"></i>
+        <?php   if ($usdAmount !== null) {
+    echo "<div class='illustr-box bg-dark col-lg-6 col-xs-12'>
+            <div class='illustr'>
+                <i class='fa fa-wallet'></i>
             </div>
             <div>
-                <h3 class="t-white">Balance</h3>
-                <h5 class="t-grey">You have <span class="t-orange"><?php echo $userInfos["sats_balance"] ?></span>
-                    satoshis (<span
-                        class="t-orange"><?php echo htmlspecialchars(file_get_contents("http://codacoin.com/api/public.php?request=convert&type=btctofiat&input=".convertToBTCFromSatoshi($userInfos["sats_balance"])."&symbol=enabled&decimal=4&exchange=average&currency=USD&denom=bitcoin")); ?></span>
-                    )
-                </h5>
+                <h3 class='t-white'>Balance</h3>
+                <h5 class='t-grey'>You have <span class='t-orange'>$satsBalance</span> satoshis (<span class='t-orange'>$usdAmount</span>)</h5>
             </div>
-        </div>
+        </div>";
+} else {
+    echo "<h5 class='t-grey'>Failed to retrieve eur conversion. Please try again later.</h5>";
+}?>
         <div class="illustr-box bg-dark col-lg-6 col-xs-12">
             <div class="illustr">
                 <i class="fa fa-magic"></i>
